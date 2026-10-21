@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Catatan Ojol PWA - Pembukuan Driver</title>
+    <meta name="description" content="Aplikasi PWA super ringan untuk pencatatan harian pendapatan & pengeluaran driver ojol (GoRide, GoFood, GrabExpress) dengan laporan bersih, grafik, dan target bulanan." />
+    
+    <!-- Open Graph & Social Cards -->
+    <meta property="og:title" content="Catatan Ojol PWA - Pembukuan Driver" />
+    <meta property="og:description" content="Aplikasi PWA super ringan untuk pencatatan harian pendapatan & pengeluaran driver ojol (GoRide, GoFood, GrabExpress) dengan laporan bersih, grafik, dan target bulanan." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- PWA & Mobile Web Capabilities -->
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#059669" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Catatan Ojol" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="icon" type="image/png" href="./icon-192.png" />
+
+    <!-- External Separate Stylesheet (Point 4) -->
+    <link rel="stylesheet" href="./style.css" />
+
+    <!-- Inline Full CSS (Point 1 - Memastikan 1 File Full Tanpa Ketergantungan Eksternal) -->
+    <style>
+      :root {
+        --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --bg-app: #f4f5f8;
+        --bg-card: #ffffff;
+        --bg-card-subtle: #f8fafc;
+        --bg-input: #f1f5f9;
+        --border-color: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #94a3b8;
+        --color-primary: #059669;
+        --color-primary-hover: #047857;
+        --color-primary-light: #ecfdf5;
+        --color-primary-text: #065f46;
+        --color-income: #10b981;
+        --color-income-bg: #ecfdf5;
+        --color-expense: #ef4444;
+        --color-expense-bg: #fef2f2;
+        --color-warning: #f59e0b;
+        --color-info: #3b82f6;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --radius-sm: 8px;
+        --radius-md: 14px;
+        --radius-lg: 20px;
+        --radius-full: 9999px;
+        --transition-fast: 0.15s ease;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg-app: #0b0f19;
+          --bg-card: #151d2f;
+          --bg-card-subtle: #1c263c;
+          --bg-input: #1f2b42;
+          --border-color: #27354f;
+          --text-primary: #f8fafc;
+          --text-secondary: #cbd5e1;
+          --text-muted: #64748b;
+          --color-primary: #10b981;
+          --color-primary-hover: #34d399;
+          --color-primary-light: #064e3b;
+          --color-primary-text: #a7f3d0;
+          --color-income: #34d399;
+          --color-income-bg: #064e3b;
+          --color-expense: #f87171;
+          --color-expense-bg: #450a0a;
+        }
+      }
+      [data-theme="dark"] {
+        --bg-app: #0b0f19;
+        --bg-card: #151d2f;
+        --bg-card-subtle: #1c263c;
+        --bg-input: #1f2b42;
+        --border-color: #27354f;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #64748b;
+        --color-primary: #10b981;
+        --color-primary-hover: #34d399;
+        --color-primary-light: #064e3b;
+        --color-primary-text: #a7f3d0;
+        --color-income: #34d399;
+        --color-income-bg: #064e3b;
+        --color-expense: #f87171;
+        --color-expense-bg: #450a0a;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+      html, body {
+        font-family: var(--font-family);
+        background-color: var(--bg-app);
+        color: var(--text-primary);
+        line-height: 1.5;
+        font-size: 15px;
+        min-height: 100vh;
+        padding-bottom: 80px;
+      }
+      .app-container {
+        max-width: 480px;
+        margin: 0 auto;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+      .app-header {
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand-section { display: flex; align-items: center; gap: 10px; }
+      .brand-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); object-fit: cover; }
+      .brand-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+      .brand-subtitle { font-size: 0.72rem; color: var(--text-muted); }
+      .header-actions { display: flex; align-items: center; gap: 6px; }
+      .icon-btn {
+        background: var(--bg-card-subtle);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .install-banner {
+        background: linear-gradient(135deg, #059669, #047857);
+        color: #ffffff;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 0.82rem;
+      }
+      .install-banner.hidden { display: none !important; }
+      .install-btn {
+        background: #ffffff;
+        color: #047857;
+        font-weight: 700;
+        border: none;
+        padding: 6px 14px;
+        border-radius: var(--radius-full);
+        font-size: 0.78rem;
+        cursor: pointer;
+      }
+      .offline-banner {
+        background: #f59e0b;
+        color: #78350f;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 6px 16px;
+        text-align: center;
+        display: none;
+      }
+      .offline-banner.active { display: block; }
+      .main-content {
+        padding: 14px 14px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .date-ribbon {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .date-controls { display: flex; align-items: center; gap: 8px; }
+      .date-nav-btn {
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .date-display { font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+      .date-picker-input { opacity: 0; position: absolute; width: 0; height: 0; pointer-events: none; }
+      .hero-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 18px 16px;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, var(--color-primary), #3b82f6);
+      }
+      .hero-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+      .hero-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+      .hero-net-amount { font-size: 2.1rem; font-weight: 800; color: var(--color-income); margin-bottom: 12px; line-height: 1.1; }
+      .hero-breakdown {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        background: var(--bg-card-subtle);
+        border-radius: var(--radius-md);
+        padding: 12px;
+      }
+      .breakdown-item { display: flex; flex-direction: column; }
+      .breakdown-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
+      .breakdown-val { font-size: 1.05rem; font-weight: 700; }
+      .breakdown-val.gross { color: var(--text-primary); }
+      .breakdown-val.expense { color: var(--color-expense); }
+      .stat-chips-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stat-chip {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 10px;
+        text-align: center;
+      }
+      .stat-chip-num { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+      .stat-chip-label { font-size: 0.68rem; color: var(--text-muted); font-weight: 600; }
+      .card-section {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        box-shadow: var(--shadow-sm);
+      }
+      .section-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+      .section-title { font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+      .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+      .category-card-btn {
+        background: var(--bg-card-subtle);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 12px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        text-align: left;
+        cursor: pointer;
+        transition: var(--transition-fast);
+      }
+      .category-card-btn:active { transform: scale(0.97); border-color: var(--color-primary); }
+      .category-top-row { display: flex; justify-content: space-between; align-items: center; }
+      .category-icon { font-size: 1.25rem; }
+      .category-total-badge { font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: var(--radius-full); }
+      .badge-income { background: var(--color-income-bg); color: var(--color-income); }
+      .badge-expense { background: var(--color-expense-bg); color: var(--color-expense); }
+      .category-name { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+      .category-subtext { font-size: 0.7rem; color: var(--text-muted); }
+      .preset-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+      .preset-chip {
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        border-radius: var(--radius-full);
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: var(--color-primary);
+        color: #ffffff;
+        border: none;
+        border-radius: var(--radius-md);
+        padding: 12px 18px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .btn-primary:active { transform: scale(0.98); background: var(--color-primary-hover); }
+      .btn-secondary {
+        background: var(--bg-card-subtle);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        border-radius: var(--radius-md);
+        padding: 10px 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .entry-list { display: flex; flex-direction: column; gap: 8px; }
+      .entry-item {
+        background: var(--bg-card-subtle);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        padding: 9px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .entry-info { display: flex; align-items: center; gap: 8px; }
+      .entry-icon { font-size: 1.1rem; }
+      .entry-desc { display: flex; flex-direction: column; }
+      .entry-title { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+      .entry-note { font-size: 0.7rem; color: var(--text-muted); }
+      .entry-val-box { display: flex; align-items: center; gap: 8px; }
+      .entry-val { font-weight: 700; font-size: 0.88rem; }
+      .entry-val.income { color: var(--color-income); }
+      .entry-val.expense { color: var(--color-expense); }
+      .entry-del-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
+      .target-box { background: var(--bg-card-subtle); border-radius: var(--radius-md); padding: 12px; margin-top: 10px; }
+      .target-header { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px; }
+      .progress-bar-track { width: 100%; height: 10px; background: var(--border-color); border-radius: var(--radius-full); overflow: hidden; }
+      .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), #3b82f6); border-radius: var(--radius-full); transition: width 0.4s ease; }
+      .target-stats-row { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); }
+      .chart-container { width: 100%; height: 200px; position: relative; margin-top: 8px; }
+      .chart-svg { width: 100%; height: 100%; }
+      .bottom-nav {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: var(--bg-card);
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-around;
+        padding: 6px 0 10px;
+        z-index: 50;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+      .nav-item {
+        background: none; border: none;
+        display: flex; flex-direction: column; align-items: center; gap: 3px;
+        color: var(--text-muted); font-size: 0.7rem; font-weight: 600;
+        cursor: pointer; padding: 4px 8px; flex: 1;
+      }
+      .nav-item.active { color: var(--color-primary); }
+      .nav-icon { font-size: 1.25rem; }
+      .modal-overlay {
+        position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(3px); z-index: 100;
+        display: flex; align-items: flex-end; justify-content: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+      }
+      .modal-overlay.open { opacity: 1; pointer-events: auto; }
+      .modal-sheet {
+        background: var(--bg-card); width: 100%; max-width: 480px;
+        border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);
+        padding: 20px 18px 28px; max-height: 85vh; overflow-y: auto;
+        transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .modal-overlay.open .modal-sheet { transform: translateY(0); }
+      .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+      .modal-title { font-size: 1.1rem; font-weight: 700; }
+      .close-btn {
+        background: var(--bg-card-subtle); border: 1px solid var(--border-color);
+        color: var(--text-secondary); width: 32px; height: 32px;
+        border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; cursor: pointer;
+      }
+      .form-group { margin-bottom: 12px; }
+      .form-label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+      .form-input {
+        width: 100%; background: var(--bg-input); border: 1px solid var(--border-color);
+        color: var(--text-primary); border-radius: var(--radius-sm);
+        padding: 10px 12px; font-size: 0.95rem; font-family: inherit; outline: none;
+      }
+      .form-input:focus { border-color: var(--color-primary); background: var(--bg-card); }
+      .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .toast-box {
+        position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-20px);
+        background: #1e293b; color: #ffffff; padding: 8px 16px; border-radius: var(--radius-full);
+        font-size: 0.82rem; font-weight: 600; box-shadow: var(--shadow-lg); opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 200;
+      }
+      .toast-box.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      .empty-state { text-align: center; padding: 20px 10px; color: var(--text-muted); font-size: 0.85rem; }
+      .tab-content { display: none; }
+      .tab-content.active { display: flex; flex-direction: column; gap: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- App Header -->
+      <header class="app-header">
+        <div class="brand-section">
+          <img src="./icon-192.png" alt="Logo Driver Ojol" class="brand-icon" />
+          <div>
+            <h1 class="brand-title">Catatan Ojol</h1>
+            <p class="brand-subtitle">Pembukuan Harian Driver</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle-btn" class="icon-btn" title="Ganti Mode Gelap/Terang" aria-label="Toggle Mode">
+            <span id="theme-icon">🌙</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- PWA Install Banner -->
+      <div id="pwa-install-banner" class="install-banner hidden">
+        <span>📲 Pasang aplikasi di layar HP agar bisa dipakai offline tanpa kuota!</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button id="pwa-install-btn" class="install-btn">Pasang</button>
+          <button id="close-install-banner" style="background:none; border:none; color:#fff; font-size:1.1rem; cursor:pointer;">✕</button>
+        </div>
+      </div>
+
+      <!-- Offline Indicator -->
+      <div id="offline-banner" class="offline-banner">
+        ⚠️ Mode Offline — Data tetap tersimpan aman di HP Anda!
+      </div>
+
+      <!-- Toast Notification Container -->
+      <div id="toast-box" class="toast-box"></div>
+
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- ================= TAB 1: CATAT HARI INI ================= -->
+        <section id="tab-today" class="tab-content active">
+          <!-- Date Ribbon -->
+          <div class="date-ribbon">
+            <div class="date-controls">
+              <button id="prev-date-btn" class="date-nav-btn" title="Hari Sebelumnya">◀</button>
+              <div id="selected-date-display" class="date-display">Hari Ini</div>
+              <input type="date" id="hidden-date-picker" class="date-picker-input" />
+              <button id="next-date-btn" class="date-nav-btn" title="Hari Berikutnya">▶</button>
+            </div>
+            <button id="today-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Hari Ini</button>
+          </div>
+
+          <!-- Hero Net Earnings Card -->
+          <div class="hero-card">
+            <div class="hero-header">
+              <span class="hero-label">Pendapatan Bersih (Net)</span>
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Kotor - Modal</span>
+            </div>
+            <div id="hero-net-amount" class="hero-net-amount">Rp 0</div>
+            
+            <div class="hero-breakdown">
+              <div class="breakdown-item">
+                <span class="breakdown-label">Total Kotor (Semua Order)</span>
+                <span id="hero-gross-amount" class="breakdown-val gross">Rp 0</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Total Pengeluaran</span>
+                <span id="hero-expense-amount" class="breakdown-val expense">Rp 0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trip Quick Counters -->
+          <div class="stat-chips-grid">
+            <div class="stat-chip">
+              <div style="display:flex; justify-content:center; align-items:center; gap:6px;">
+                <button id="trip-minus-btn" style="background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer;">−</button>
+                <span id="stat-trips" class="stat-chip-num">0</span>
+                <button id="trip-plus-btn" style="background:none; border:none; font-size:1.1rem; color:var(--color-primary); cursor:pointer;">+</button>
+              </div>
+              <span class="stat-chip-label">Total Trip / Order</span>
+            </div>
+            <div class="stat-chip">
+              <span id="stat-avg-trip" class="stat-chip-num">Rp 0</span>
+              <span class="stat-chip-label">Bersih / Trip</span>
+            </div>
+            <div class="stat-chip">
+              <span id="stat-margin" class="stat-chip-num">0%</span>
+              <span class="stat-chip-label">Margin Profit</span>
+            </div>
+          </div>
+
+          <!-- PENDAPATAN KOTOR (INCOME BUTTONS) -->
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>🛵</span> Tambah Orderan (Pendapatan)</h2>
+              <span style="font-size:0.7rem; color:var(--text-muted);">Pilih Layanan</span>
+            </div>
+            <div class="category-grid">
+              <button class="category-card-btn" data-cat="goride" data-type="income">
+                <div class="category-top-row">
+                  <span class="category-icon">🛵</span>
+                  <span id="badge-cat-goride" class="category-total-badge badge-income">Rp 0</span>
+                </div>
+                <span class="category-name">GoRide / GrabBike</span>
+                <span class="category-subtext">Tarif penumpang</span>
+              </button>
+
+              <button class="category-card-btn" data-cat="gofood" data-type="income">
+                <div class="category-top-row">
+                  <span class="category-icon">🍔</span>
+                  <span id="badge-cat-gofood" class="category-total-badge badge-income">Rp 0</span>
+                </div>
+                <span class="category-name">GoFood / GrabFood</span>
+                <span class="category-subtext">Antar makanan resto</span>
+              </button>
+
+              <button class="category-card-btn" data-cat="grabexpress" data-type="income">
+                <div class="category-top-row">
+                  <span class="category-icon">📦</span>
+                  <span id="badge-cat-grabexpress" class="category-total-badge badge-income">Rp 0</span>
+                </div>
+                <span class="category-name">GrabExpress / GoSend</span>
+                <span class="category-subtext">Kirim paket / dokumen</span>
+              </button>
+
+              <button class="category-card-btn" data-cat="tip_bonus" data-type="income">
+                <div class="category-top-row">
+                  <span class="category-icon">🎁</span>
+                  <span id="badge-cat-tip_bonus" class="category-total-badge badge-income">Rp 0</span>
+                </div>
+                <span class="category-name">Tip & Bonus</span>
+                <span class="category-subtext">Tip tunai & insentif</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- PENGELUARAN (EXPENSE BUTTONS) -->
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>⛽</span> Tambah Pengeluaran (Modal)</h2>
+              <span style="font-size:0.7rem; color:var(--text-muted);">Bensin & Harian</span>
+            </div>
+            <div class="category-grid">
+              <button class="category-card-btn" data-cat="bensin" data-type="expense">
+                <div class="category-top-row">
+                  <span class="category-icon">⛽</span>
+                  <span id="badge-cat-bensin" class="category-total-badge badge-expense">Rp 0</span>
+                </div>
+                <span class="category-name">Bensin Motor</span>
+                <span class="category-subtext">Pertalite / Pertamax</span>
+              </button>
+
+              <button class="category-card-btn" data-cat="parkir" data-type="expense">
+                <div class="category-top-row">
+                  <span class="category-icon">🅿️</span>
+                  <span id="badge-cat-parkir" class="category-total-badge badge-expense">Rp 0</span>
+                </div>
+                <span class="category-name">Parkir</span>
+                <span class="category-subtext">Mall, resto & ruko</span>
+              </button>
+
+              <button class="category-card-btn" data-cat="makan" data-type="expense">
+                <div class="category-top-row">
+                  <span class="category-icon">☕</span>
+                  <span id="badge-cat-makan" class="category-total-badge badge-expense">Rp 0</span>
+                </div>
+                <span class="category-name">Makan & Warkop</span>
+                <span class="category-subtext">Makan siang, es teh, kopi</span>
+              </button>
+
+              <button class="category-card-btn" data-cat="kuota" data-type="expense">
+                <div class="category-top-row">
+                  <span class="category-icon">📱</span>
+                  <span id="badge-cat-kuota" class="category-total-badge badge-expense">Rp 0</span>
+                </div>
+                <span class="category-name">Pulsa & Kuota</span>
+                <span class="category-subtext">Paket data ojol</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- DAFTAR CATATAN HARI INI -->
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>📝</span> Rincian Transaksi Tanggal Ini</h2>
+            </div>
+            <div id="daily-entries-list" class="entry-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= TAB 2: LAPORAN & TARGET ================= -->
+        <section id="tab-reports" class="tab-content">
+          <!-- Target Bulanan Card -->
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>🎯</span> Target Bersih Bulan Ini</h2>
+              <button id="edit-target-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.72rem;">Ubah Target</button>
+            </div>
+            <div class="target-box">
+              <div class="target-header">
+                <span>Progress Capaian</span>
+                <span id="target-percent" style="color:var(--color-primary);">0%</span>
+              </div>
+              <div class="progress-bar-track">
+                <div id="target-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+              </div>
+              <div class="target-stats-row">
+                <span>Target: <strong id="target-display-val">Rp 5.000.000</strong></span>
+                <span>Sisa: <strong id="target-sisa">Rp 0</strong></span>
+              </div>
+            </div>
+            <div style="margin-top:12px; background:var(--bg-input); padding:10px; border-radius:var(--radius-sm); font-size:0.75rem; color:var(--text-secondary);">
+              💡 <strong>Tips Narik:</strong> Untuk mencapai target bulan ini, pertahankan rata-rata bersih minimal <strong id="target-per-hari" style="color:var(--color-primary);">Rp 0</strong> per hari tersisa.
+            </div>
+          </div>
+
+          <!-- Rekap Bulan Ini -->
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>📅</span> Akumulasi Bulan Ini</h2>
+            </div>
+            <div class="hero-breakdown" style="grid-template-columns: 1fr; margin-bottom: 10px;">
+              <div class="breakdown-item">
+                <span class="breakdown-label">Total Bersih Yang Masuk Kantong</span>
+                <span id="rep-month-net" class="breakdown-val" style="color:var(--color-income); font-size: 1.4rem;">Rp 0</span>
+              </div>
+            </div>
+            <div class="hero-breakdown">
+              <div class="breakdown-item">
+                <span class="breakdown-label">Total Kotor</span>
+                <span id="rep-month-gross" class="breakdown-val gross">Rp 0</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Pengeluaran</span>
+                <span id="rep-month-expense" class="breakdown-val expense">Rp 0</span>
+              </div>
+            </div>
+            <div class="stat-chips-grid" style="margin-top: 10px; grid-template-columns: 1fr 1fr;">
+              <div class="stat-chip">
+                <span id="rep-month-trips" class="stat-chip-num">0 Trip</span>
+                <span class="stat-chip-label">Total Trip Dijalankan</span>
+              </div>
+              <div class="stat-chip">
+                <span id="rep-work-days" class="stat-chip-num">0 Hari</span>
+                <span class="stat-chip-label">Hari Aktif Narik</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rekap 7 Hari Terakhir -->
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>⚡</span> Performa 7 Hari Terakhir</h2>
+            </div>
+            <div class="hero-breakdown">
+              <div class="breakdown-item">
+                <span class="breakdown-label">Bersih Seminggu</span>
+                <span id="rep-week-net" class="breakdown-val" style="color:var(--color-income);">Rp 0</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Kotor Seminggu</span>
+                <span id="rep-week-gross" class="breakdown-val gross">Rp 0</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= TAB 3: GRAFIK PERFORMA ================= -->
+        <section id="tab-charts" class="tab-content">
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>📊</span> Grafik Pendapatan Bersih (7 Hari)</h2>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 8px;">
+              Batang hijau = Bersih masuk kantong. Kotak pudar = Total order kotor.
+            </p>
+            <div class="chart-container" id="performance-chart-svg">
+              <!-- Rendered via SVG -->
+            </div>
+          </div>
+
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>🛵</span> Distribusi Layanan Favorit</h2>
+            </div>
+            <div id="service-breakdown-bars">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= TAB 4: RIWAYAT & BACKUP ================= -->
+        <section id="tab-history" class="tab-content">
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>💾</span> Backup & Export Data</h2>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="export-data-btn" class="btn-primary" style="flex:1; font-size:0.8rem; padding:10px;">
+                📥 Export JSON
+              </button>
+              <button id="import-data-btn" class="btn-secondary" style="flex:1; font-size:0.8rem; padding:10px;">
+                📤 Import JSON
+              </button>
+              <input type="file" id="import-file-input" accept=".json" style="display:none;" />
+            </div>
+            <button id="reset-data-btn" class="btn-secondary" style="margin-top:10px; width:100%; color:var(--color-expense); font-size:0.78rem;">
+              🗑️ Reset ke Data Default
+            </button>
+          </div>
+
+          <div class="card-section">
+            <div class="section-title-row">
+              <h2 class="section-title"><span>📜</span> Riwayat Pembukuan Harian</h2>
+            </div>
+            <div id="history-logs-list" class="entry-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Bottom Tab Navigation -->
+      <nav class="bottom-nav">
+        <button class="nav-item active" data-tab="today">
+          <span class="nav-icon">🛵</span>
+          <span>Catat</span>
+        </button>
+        <button class="nav-item" data-tab="reports">
+          <span class="nav-icon">🎯</span>
+          <span>Target</span>
+        </button>
+        <button class="nav-item" data-tab="charts">
+          <span class="nav-icon">📊</span>
+          <span>Grafik</span>
+        </button>
+        <button class="nav-item" data-tab="history">
+          <span class="nav-icon">📜</span>
+          <span>Riwayat</span>
+        </button>
+      </nav>
+
+      <!-- Quick Add Transaction Modal -->
+      <div id="entry-modal" class="modal-overlay">
+        <div class="modal-sheet">
+          <div class="modal-header">
+            <div>
+              <h3 id="modal-title" class="modal-title">Tambah Transaksi</h3>
+              <p id="modal-subtitle" style="font-size:0.75rem; color:var(--text-muted);"></p>
+            </div>
+            <button id="modal-close-icon" class="close-btn">✕</button>
+          </div>
+
+          <!-- Nominal Input -->
+          <div class="form-group">
+            <label class="form-label">Nominal (Rupiah)</label>
+            <input type="number" id="modal-amount" class="form-input" placeholder="Contoh: 25000" inputmode="numeric" />
+          </div>
+
+          <!-- Quick Presets -->
+          <div style="margin-bottom: 12px;">
+            <span class="form-label">Tombol Cepat:</span>
+            <div class="preset-row">
+              <button class="preset-chip modal-quick-chip" data-val="2000">+2 Ribu</button>
+              <button class="preset-chip modal-quick-chip" data-val="5000">+5 Ribu</button>
+              <button class="preset-chip modal-quick-chip" data-val="10000">+10 Ribu</button>
+              <button class="preset-chip modal-quick-chip" data-val="20000">+20 Ribu</button>
+              <button class="preset-chip modal-quick-chip" data-val="35000">+35 Ribu</button>
+              <button class="preset-chip modal-quick-chip" data-val="50000">+50 Ribu</button>
+              <button class="preset-chip modal-quick-chip" data-val="100000">+100 Ribu</button>
+            </div>
+          </div>
+
+          <!-- Catatan Tambahan -->
+          <div class="form-group">
+            <label class="form-label">Catatan Tambahan (Opsional)</label>
+            <input type="text" id="modal-note" class="form-input" placeholder="Contoh: GoFood resto bebek, Parkir mall" />
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button id="modal-cancel-btn" class="btn-secondary" style="flex:1;">Batal</button>
+            <button id="modal-save-btn" class="btn-primary" style="flex:2;">Simpan Catatan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script Register Service Worker & Load app.js (Point 1, 3 & 5) -->
+    <script src="./app.js"></script>
+
+    <!-- Inline Service Worker Registration & Fallback Initialization -->
+    <script>
+      // Register PWA Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('./sw.js')
+            .then(function(reg) {
+              console.log('[PWA] ServiceWorker registered with scope:', reg.scope);
+            })
+            .catch(function(err) {
+              console.warn('[PWA] ServiceWorker registration failed:', err);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
